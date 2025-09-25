@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тренировка Делимости / Divisibility Training</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .rule-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .rule-card:hover {
+            transform: translateY(-5px);
+        }
+        .timer-bar {
+            transition: width 1s linear;
+        }
+        .divisor-btn.selected {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: white;
+            transform: scale(1.05);
+            border-color: #2563eb; /* border-blue-700 */
+        }
+        .divisor-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .share-icon:hover {
+            transform: scale(1.1);
+        }
+        .lang-btn {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s, transform 0.2s;
+            border: 2px solid transparent;
+        }
+        .lang-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .lang-btn.active {
+            opacity: 1;
+            border-color: #4f46e5; /* indigo-600 */
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+        <!-- Game Section -->
+        <section id="game-section" class="mb-12 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg text-center">
+            <h2 data-key="game_title" class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">Математический спринт</h2>
+            <div class="flex justify-center items-center space-x-6 mb-4">
+                <div class="text-lg">
+                    <span data-key="level" class="font-bold text-blue-500">Уровень:</span>
+                    <span id="level" class="font-bold text-2xl">0</span>
+                </div>
+                <div class="text-lg">
+                    <span data-key="high_score" class="font-bold text-green-500">Рекорд:</span>
+                    <span id="high-score" class="font-bold text-2xl">0</span>
+                </div>
+            </div>
+
+            <div id="game-area" class="min-h-[280px] flex flex-col items-center justify-center">
+                <div id="start-screen">
+                     <p id="game-over-text" class="text-2xl font-bold mb-4"></p>
+                    <button id="start-btn" data-key="start_game" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl transition-transform transform hover:scale-105">Начать игру</button>
+                    <!-- Share section, hidden by default -->
+                    <div id="share-section" class="hidden w-full max-w-sm mx-auto mt-6">
+                        <p data-key="share_record" class="text-lg mb-3 font-semibold">Поделитесь своим рекордом!</p>
+                        
+                        <div id="share-input-section" class="flex flex-col items-center gap-3">
+                             <input id="nickname-input" type="text" data-key-placeholder="nickname_placeholder" placeholder="Введите ваше имя" class="text-center w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                             <button id="generate-share-btn" data-key="generate" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg">Сгенерировать</button>
+                        </div>
+
+                        <div id="share-output-section" class="hidden mt-4">
+                            <!-- Image and links will be injected here -->
+                        </div>
+                        <p id="share-feedback" class="text-sm text-gray-500 dark:text-gray-400 h-5 mt-2"></p>
+                    </div>
+                </div>
+                <div id="question-screen" class="hidden w-full">
+                    <p id="question" data-key="question_text" class="text-xl md:text-2xl mb-4">На какие числа делится:</p>
+                    <p id="number-display" class="text-4xl md:text-6xl font-mono mb-6"></p>
+                    <div id="divisor-buttons" class="grid grid-cols-3 gap-3 mb-6 max-w-sm mx-auto">
+                        <!-- Divisor buttons will be generated here -->
+                    </div>
+                </div>
+                 <div id="feedback" class="mt-4 text-xl font-bold h-8"></div>
+            </div>
+            
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 mt-4 overflow-hidden">
+                <div id="timer-bar" class="bg-blue-500 h-4 rounded-full timer-bar" style="width: 100%;"></div>
+            </div>
+
+        </section>
+
+        <header class="text-center mb-8 md:mb-12">
+            <h1 data-key="rules_title" class="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white">Правила Делимости</h1>
+            <p data-key="rules_subtitle" class="mt-2 text-lg md:text-xl text-gray-600 dark:text-gray-400">Используйте эти правила, чтобы стать быстрее!</p>
+            <div id="lang-switcher-container" class="mt-6 flex justify-center gap-3">
+                <!-- Flags will be injected here -->
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            <!-- Rules cards -->
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_2_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 2</h2>
+                <p data-key="div_by_2_rule" class="mt-3 text-base">Число делится на 2, если его **последняя цифра четная** (0, 2, 4, 6, 8).</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_3_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 3</h2>
+                <p data-key="div_by_3_rule" class="mt-3 text-base">Число делится на 3, если **сумма его цифр** делится на 3.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_9_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 9</h2>
+                <p data-key="div_by_9_rule" class="mt-3 text-base">Число делится на 9, если **сумма его цифр** делится на 9.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_4_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 4</h2>
+                <p data-key="div_by_4_rule" class="mt-3 text-base">Число делится на 4, если число, образованное **двумя его последними цифрами**, делится на 4.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_8_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 8</h2>
+                <p data-key="div_by_8_rule" class="mt-3 text-base">Число делится на 8, если число, образованное **тремя его последними цифрами**, делится на 8.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_6_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 6</h2>
+                <p data-key="div_by_6_rule" class="mt-3 text-base">Число делится на 6, если оно делится **одновременно на 2 и на 3**.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_5_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 5</h2>
+                <p data-key="div_by_5_rule" class="mt-3 text-base">Число делится на 5, если его **последняя цифра 0 или 5**.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_10_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 10</h2>
+                <p data-key="div_by_10_rule" class="mt-3 text-base">Число делится на 10, если его **последняя цифра 0**.</p>
+            </div>
+            <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6">
+                <h2 data-key="div_by_25_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 25</h2>
+                <p data-key="div_by_25_rule" class="mt-3 text-base">Число делится на 25, если **две его последние цифры** — это 00, 25, 50 или 75.</p>
+            </div>
+             <div class="rule-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden p-6 md:col-span-2 lg:col-span-3">
+                <h2 data-key="div_by_11_title" class="text-2xl font-bold text-indigo-500 dark:text-indigo-400">Делимость на 11</h2>
+                <p data-key="div_by_11_rule" class="mt-3 text-base">Число делится на 11, если **разность между суммой цифр на нечетных местах и суммой цифр на четных местах** (считая справа налево) делится на 11.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Translations ---
+        const translations = {
+            ru: {
+                game_title: "Математический спринт", level: "Уровень:", high_score: "Рекорд:", start_game: "Начать игру", share_record: "Поделитесь своим рекордом!", nickname_placeholder: "Введите ваше имя", generate: "Сгенерировать", question_text: "На какие числа делится:", game_over: "Игра окончена! Ваш результат: {score}", play_again: "Начать заново", enter_name_feedback: "Пожалуйста, введите имя.", copied_feedback: "Скопировано!", rules_title: "Правила Делимости", rules_subtitle: "Используйте эти правила, чтобы стать быстрее!",
+                div_by_2_title: "Делимость на 2", div_by_2_rule: "Число делится на 2, если его **последняя цифра четная** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Делимость на 3", div_by_3_rule: "Число делится на 3, если **сумма его цифр** делится на 3.",
+                div_by_9_title: "Делимость на 9", div_by_9_rule: "Число делится на 9, если **сумма его цифр** делится на 9.",
+                div_by_4_title: "Делимость на 4", div_by_4_rule: "Число делится на 4, если число, образованное **двумя его последними цифрами**, делится на 4.",
+                div_by_8_title: "Делимость на 8", div_by_8_rule: "Число делится на 8, если число, образованное **тремя его последними цифрами**, делится на 8.",
+                div_by_6_title: "Делимость на 6", div_by_6_rule: "Число делится на 6, если оно делится **одновременно на 2 и на 3**.",
+                div_by_5_title: "Делимость на 5", div_by_5_rule: "Число делится на 5, если его **последняя цифра 0 или 5**.",
+                div_by_10_title: "Делимость на 10", div_by_10_rule: "Число делится на 10, если его **последняя цифра 0**.",
+                div_by_25_title: "Делимость на 25", div_by_25_rule: "Число делится на 25, если **две его последние цифры** — это 00, 25, 50 или 75.",
+                div_by_11_title: "Делимость на 11", div_by_11_rule: "Число делится на 11, если **разность между суммой цифр на нечетных местах и суммой цифр на четных местах** (считая справа налево) делится на 11.",
+            },
+            en: {
+                game_title: "Math Sprint", level: "Level:", high_score: "High Score:", start_game: "Start Game", share_record: "Share your high score!", nickname_placeholder: "Enter your name", generate: "Generate", question_text: "Is divisible by:", game_over: "Game Over! Your score: {score}", play_again: "Play Again", enter_name_feedback: "Please enter a name.", copied_feedback: "Copied!", rules_title: "Divisibility Rules", rules_subtitle: "Use these rules to get faster!",
+                div_by_2_title: "Divisibility by 2", div_by_2_rule: "A number is divisible by 2 if its **last digit is even** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Divisibility by 3", div_by_3_rule: "A number is divisible by 3 if the **sum of its digits** is divisible by 3.",
+                div_by_9_title: "Divisibility by 9", div_by_9_rule: "A number is divisible by 9 if the **sum of its digits** is divisible by 9.",
+                div_by_4_title: "Divisibility by 4", div_by_4_rule: "A number is divisible by 4 if the number formed by its **last two digits** is divisible by 4.",
+                div_by_8_title: "Divisibility by 8", div_by_8_rule: "A number is divisible by 8 if the number formed by its **last three digits** is divisible by 8.",
+                div_by_6_title: "Divisibility by 6", div_by_6_rule: "A number is divisible by 6 if it is divisible by **both 2 and 3**.",
+                div_by_5_title: "Divisibility by 5", div_by_5_rule: "A number is divisible by 5 if its **last digit is 0 or 5**.",
+                div_by_10_title: "Divisibility by 10", div_by_10_rule: "A number is divisible by 10 if its **last digit is 0**.",
+                div_by_25_title: "Divisibility by 25", div_by_25_rule: "A number is divisible by 25 if its **last two digits** are 00, 25, 50, or 75.",
+                div_by_11_title: "Divisibility by 11", div_by_11_rule: "A number is divisible by 11 if the **difference of the alternating sum of its digits** is divisible by 11.",
+            },
+            es: {
+                game_title: "Sprint Matemático", level: "Nivel:", high_score: "Récord:", start_game: "Empezar Juego", share_record: "¡Comparte tu récord!", nickname_placeholder: "Escribe tu nombre", generate: "Generar", question_text: "Es divisible por:", game_over: "¡Juego Terminado! Tu puntuación: {score}", play_again: "Jugar de Nuevo", enter_name_feedback: "Por favor, introduce un nombre.", copied_feedback: "¡Copiado!", rules_title: "Reglas de Divisibilidad", rules_subtitle: "¡Usa estas reglas para ser más rápido!",
+                div_by_2_title: "Divisibilidad por 2", div_by_2_rule: "Un número es divisible por 2 si su **último dígito es par** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Divisibilidad por 3", div_by_3_rule: "Un número es divisible por 3 si la **suma de sus dígitos** es divisible por 3.",
+                div_by_9_title: "Divisibilidad por 9", div_by_9_rule: "Un número es divisible por 9 si la **suma de sus dígitos** es divisible por 9.",
+                div_by_4_title: "Divisibilidad por 4", div_by_4_rule: "Un número es divisible por 4 si el número formado por sus **dos últimos dígitos** es divisible por 4.",
+                div_by_8_title: "Divisibilidad por 8", div_by_8_rule: "Un número es divisible por 8 si el número formado por sus **tres últimos dígitos** es divisible por 8.",
+                div_by_6_title: "Divisibilidad por 6", div_by_6_rule: "Un número es divisible por 6 si es divisible por **2 y 3 a la vez**.",
+                div_by_5_title: "Divisibilidad por 5", div_by_5_rule: "Un número es divisible por 5 si su **último dígito es 0 o 5**.",
+                div_by_10_title: "Divisibilidad por 10", div_by_10_rule: "Un número es divisible por 10 si su **último dígito es 0**.",
+                div_by_25_title: "Divisibilidad por 25", div_by_25_rule: "Un número es divisible por 25 si sus **dos últimos dígitos** son 00, 25, 50 o 75.",
+                div_by_11_title: "Divisibilidad por 11", div_by_11_rule: "Un número es divisible por 11 si la **suma alternada de sus dígitos** es divisible por 11.",
+            },
+            fr: {
+                game_title: "Sprint Mathématique", level: "Niveau :", high_score: "Record :", start_game: "Commencer le jeu", share_record: "Partagez votre record !", nickname_placeholder: "Entrez votre nom", generate: "Générer", question_text: "Est divisible par :", game_over: "Jeu terminé ! Votre score : {score}", play_again: "Rejouer", enter_name_feedback: "Veuillez entrer un nom.", copied_feedback: "Copié !", rules_title: "Règles de Divisibilité", rules_subtitle: "Utilisez ces règles pour être plus rapide !",
+                div_by_2_title: "Divisibilité par 2", div_by_2_rule: "Un nombre est divisible par 2 si son **dernier chiffre est pair** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Divisibilité par 3", div_by_3_rule: "Un nombre est divisible par 3 si la **somme de ses chiffres** est divisible par 3.",
+                div_by_9_title: "Divisibilité par 9", div_by_9_rule: "Un nombre est divisible par 9 si la **somme de ses chiffres** est divisible par 9.",
+                div_by_4_title: "Divisibilité par 4", div_by_4_rule: "Un nombre est divisible par 4 si le nombre formé par ses **deux derniers chiffres** est divisible par 4.",
+                div_by_8_title: "Divisibilité par 8", div_by_8_rule: "Un nombre est divisible par 8 si le nombre formé par ses **trois derniers chiffres** est divisible par 8.",
+                div_by_6_title: "Divisibilité par 6", div_by_6_rule: "Un nombre est divisible par 6 s'il est divisible **à la fois par 2 et 3**.",
+                div_by_5_title: "Divisibilité par 5", div_by_5_rule: "Un nombre est divisible par 5 si son **dernier chiffre est 0 ou 5**.",
+                div_by_10_title: "Divisibilité par 10", div_by_10_rule: "Un nombre est divisible par 10 si son **dernier chiffre est 0**.",
+                div_by_25_title: "Divisibilité par 25", div_by_25_rule: "Un nombre est divisible par 25 si ses **deux derniers chiffres** sont 00, 25, 50 ou 75.",
+                div_by_11_title: "Divisibilité par 11", div_by_11_rule: "Un nombre est divisible par 11 si la **somme alternée de ses chiffres** est divisible par 11.",
+            },
+            it: {
+                game_title: "Sprint Matematico", level: "Livello:", high_score: "Record:", start_game: "Inizia Gioco", share_record: "Condividi il tuo record!", nickname_placeholder: "Inserisci il tuo nome", generate: "Genera", question_text: "È divisibile per:", game_over: "Gioco Finito! Il tuo punteggio: {score}", play_again: "Gioca di Nuovo", enter_name_feedback: "Per favore, inserisci un nome.", copied_feedback: "Copiato!", rules_title: "Regole di Divisibilità", rules_subtitle: "Usa queste regole per essere più veloce!",
+                div_by_2_title: "Divisibilità per 2", div_by_2_rule: "Un numero è divisibile per 2 se la sua **ultima cifra è pari** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Divisibilità per 3", div_by_3_rule: "Un numero è divisibile per 3 se la **somma delle sue cifre** è divisibile per 3.",
+                div_by_9_title: "Divisibilità per 9", div_by_9_rule: "Un numero è divisibile per 9 se la **somma delle sue cifre** è divisibile per 9.",
+                div_by_4_title: "Divisibilità per 4", div_by_4_rule: "Un numero è divisibile per 4 se il numero formato dalle sue **ultime due cifre** è divisibile per 4.",
+                div_by_8_title: "Divisibilità per 8", div_by_8_rule: "Un numero è divisibile per 8 se il numero formato dalle sue **ultime tre cifre** è divisibile per 8.",
+                div_by_6_title: "Divisibilità per 6", div_by_6_rule: "Un numero è divisibile per 6 se è divisibile **sia per 2 che per 3**.",
+                div_by_5_title: "Divisibilità per 5", div_by_5_rule: "Un numero è divisibile per 5 se la sua **ultima cifra è 0 o 5**.",
+                div_by_10_title: "Divisibilità per 10", div_by_10_rule: "Un numero è divisibile per 10 se la sua **ultima cifra è 0**.",
+                div_by_25_title: "Divisibilità per 25", div_by_25_rule: "Un numero è divisibile per 25 se le sue **ultime due cifre** sono 00, 25, 50 o 75.",
+                div_by_11_title: "Divisibilità per 11", div_by_11_rule: "Un numero è divisibile per 11 se la **somma alternata delle sue cifre** è divisibile per 11.",
+            },
+            pt: {
+                game_title: "Sprint de Matemática", level: "Nível:", high_score: "Recorde:", start_game: "Começar Jogo", share_record: "Partilhe o seu recorde!", nickname_placeholder: "Digite seu nome", generate: "Gerar", question_text: "É divisível por:", game_over: "Fim de Jogo! Sua pontuação: {score}", play_again: "Jogar Novamente", enter_name_feedback: "Por favor, insira um nome.", copied_feedback: "Copiado!", rules_title: "Regras de Divisibilidade", rules_subtitle: "Use estas regras para ser mais rápido!",
+                div_by_2_title: "Divisibilidade por 2", div_by_2_rule: "Um número é divisível por 2 se o seu **último dígito for par** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Divisibilidade por 3", div_by_3_rule: "Um número é divisível por 3 se a **soma dos seus dígitos** for divisível por 3.",
+                div_by_9_title: "Divisibilidade por 9", div_by_9_rule: "Um número é divisível por 9 se a **soma dos seus dígitos** for divisível por 9.",
+                div_by_4_title: "Divisibilidade por 4", div_by_4_rule: "Um número é divisível por 4 se o número formado pelos seus **dois últimos dígitos** for divisível por 4.",
+                div_by_8_title: "Divisibilidade por 8", div_by_8_rule: "Um número é divisível por 8 se o número formado pelos seus **três últimos dígitos** for divisível por 8.",
+                div_by_6_title: "Divisibilidade por 6", div_by_6_rule: "Um número é divisível por 6 se for divisível por **2 e 3 ao mesmo tempo**.",
+                div_by_5_title: "Divisibilidade por 5", div_by_5_rule: "Um número é divisível por 5 se o seu **último dígito for 0 ou 5**.",
+                div_by_10_title: "Divisibilidade por 10", div_by_10_rule: "Um número é divisível por 10 se o seu **último dígito for 0**.",
+                div_by_25_title: "Divisibilidade por 25", div_by_25_rule: "Um número é divisível por 25 se os seus **dois últimos dígitos** forem 00, 25, 50 ou 75.",
+                div_by_11_title: "Divisibilidade por 11", div_by_11_rule: "Um número é divisível por 11 se a **soma alternada dos seus dígitos** for divisível por 11.",
+            },
+            uk: {
+                game_title: "Математичний спринт", level: "Рівень:", high_score: "Рекорд:", start_game: "Почати гру", share_record: "Поділіться своїм рекордом!", nickname_placeholder: "Введіть ваше ім'я", generate: "Згенерувати", question_text: "На які числа ділиться:", game_over: "Гру закінчено! Ваш результат: {score}", play_again: "Грати знову", enter_name_feedback: "Будь ласка, введіть ім'я.", copied_feedback: "Скопійовано!", rules_title: "Ознаки Подільності", rules_subtitle: "Використовуйте ці правила, щоб стати швидше!",
+                div_by_2_title: "Подільність на 2", div_by_2_rule: "Число ділиться на 2, якщо його **остання цифра парна** (0, 2, 4, 6, 8).",
+                div_by_3_title: "Подільність на 3", div_by_3_rule: "Число ділиться на 3, якщо **сума його цифр** ділиться на 3.",
+                div_by_9_title: "Подільність на 9", div_by_9_rule: "Число ділиться на 9, якщо **сума його цифр** ділиться на 9.",
+                div_by_4_title: "Подільність на 4", div_by_4_rule: "Число ділиться на 4, якщо число, утворене **двома його останніми цифрами**, ділиться на 4.",
+                div_by_8_title: "Подільність на 8", div_by_8_rule: "Число ділиться на 8, якщо число, утворене **трьома його останніми цифрами**, ділиться на 8.",
+                div_by_6_title: "Подільність на 6", div_by_6_rule: "Число ділиться на 6, якщо воно ділиться **одночасно на 2 і на 3**.",
+                div_by_5_title: "Подільність на 5", div_by_5_rule: "Число ділиться на 5, якщо його **остання цифра 0 або 5**.",
+                div_by_10_title: "Подільність на 10", div_by_10_rule: "Число ділиться на 10, якщо його **остання цифра 0**.",
+                div_by_25_title: "Подільність на 25", div_by_25_rule: "Число ділиться на 25, якщо **дві його останні цифри** — це 00, 25, 50 або 75.",
+                div_by_11_title: "Подільність на 11", div_by_11_rule: "Число ділиться на 11, якщо **різниця між сумою цифр на непарних місцях і сумою цифр на парних місцях** (рахуючи справа наліво) ділиться на 11.",
+            },
+            ar: {
+                game_title: "سباق الرياضيات", level: "المستوى:", high_score: "أعلى نتيجة:", start_game: "ابدأ اللعبة", share_record: "شارك نتيجتك!", nickname_placeholder: "أدخل اسمك", generate: "إنشاء", question_text: "هل يقبل القسمة على:", game_over: "انتهت اللعبة! نتيجتك: {score}", play_again: "العب مرة أخرى", enter_name_feedback: "الرجاء إدخال اسم.", copied_feedback: "تم النسخ!", rules_title: "قواعد قابلية القسمة", rules_subtitle: "استخدم هذه القواعد لتصبح أسرع!",
+                div_by_2_title: "القسمة على 2", div_by_2_rule: "العدد يقبل القسمة على 2 إذا كان **رقمه الأخير زوجيًا** (0, 2, 4, 6, 8).",
+                div_by_3_title: "القسمة على 3", div_by_3_rule: "العدد يقبل القسمة على 3 إذا كان **مجموع أرقامه** يقبل القسمة على 3.",
+                div_by_9_title: "القسمة على 9", div_by_9_rule: "العدد يقبل القسمة على 9 إذا كان **مجموع أرقامه** يقبل القسمة على 9.",
+                div_by_4_title: "القسمة على 4", div_by_4_rule: "العدد يقبل القسمة على 4 إذا كان العدد المكون من **آخر رقمين** يقبل القسمة على 4.",
+                div_by_8_title: "القسمة على 8", div_by_8_rule: "العدد يقبل القسمة على 8 إذا كان العدد المكون من **آخر ثلاثة أرقام** يقبل القسمة على 8.",
+                div_by_6_title: "القسمة على 6", div_by_6_rule: "العدد يقبل القسمة على 6 إذا كان يقبل القسمة على **2 و 3 معًا**.",
+                div_by_5_title: "القسمة على 5", div_by_5_rule: "العدد يقبل القسمة على 5 إذا كان **رقمه الأخير 0 أو 5**.",
+                div_by_10_title: "القسمة على 10", div_by_10_rule: "العدد يقبل القسمة على 10 إذا كان **رقمه الأخير 0**.",
+                div_by_25_title: "القسمة على 25", div_by_25_rule: "العدد يقبل القسمة على 25 إذا كان **آخر رقمين** هما 00, 25, 50, أو 75.",
+                div_by_11_title: "القسمة على 11", div_by_11_rule: "العدد يقبل القسمة على 11 إذا كان **المجموع المتناوب لأرقامه** يقبل القسمة على 11.",
+            },
+            de: {
+                game_title: "Mathe-Sprint", level: "Level:", high_score: "Rekord:", start_game: "Spiel starten", share_record: "Teile deinen Rekord!", nickname_placeholder: "Gib deinen Namen ein", generate: "Generieren", question_text: "Ist teilbar durch:", game_over: "Spiel beendet! Dein Ergebnis: {score}", play_again: "Nochmal spielen", enter_name_feedback: "Bitte gib einen Namen ein.", copied_feedback: "Kopiert!", rules_title: "Teilbarkeitsregeln", rules_subtitle: "Nutze diese Regeln, um schneller zu werden!",
+                div_by_2_title: "Teilbarkeit durch 2", div_by_2_rule: "Eine Zahl ist durch 2 teilbar, wenn ihre **letzte Ziffer gerade** ist (0, 2, 4, 6, 8).",
+                div_by_3_title: "Teilbarkeit durch 3", div_by_3_rule: "Eine Zahl ist durch 3 teilbar, wenn ihre **Quersumme** durch 3 teilbar ist.",
+                div_by_9_title: "Teilbarkeit durch 9", div_by_9_rule: "Eine Zahl ist durch 9 teilbar, wenn ihre **Quersumme** durch 9 teilbar ist.",
+                div_by_4_title: "Teilbarkeit durch 4", div_by_4_rule: "Eine Zahl ist durch 4 teilbar, wenn die Zahl aus ihren **letzten beiden Ziffern** durch 4 teilbar ist.",
+                div_by_8_title: "Teilbarkeit durch 8", div_by_8_rule: "Eine Zahl ist durch 8 teilbar, wenn die Zahl aus ihren **letzten drei Ziffern** durch 8 teilbar ist.",
+                div_by_6_title: "Teilbarkeit durch 6", div_by_6_rule: "Eine Zahl ist durch 6 teilbar, wenn sie **sowohl durch 2 als auch durch 3** teilbar ist.",
+                div_by_5_title: "Teilbarkeit durch 5", div_by_5_rule: "Eine Zahl ist durch 5 teilbar, wenn ihre **letzte Ziffer 0 oder 5** ist.",
+                div_by_10_title: "Teilbarkeit durch 10", div_by_10_rule: "Eine Zahl ist durch 10 teilbar, wenn ihre **letzte Ziffer 0** ist.",
+                div_by_25_title: "Teilbarkeit durch 25", div_by_25_rule: "Eine Zahl ist durch 25 teilbar, wenn ihre **letzten beiden Ziffern** 00, 25, 50 oder 75 sind.",
+                div_by_11_title: "Teilbarkeit durch 11", div_by_11_rule: "Eine Zahl ist durch 11 teilbar, wenn die **alternierende Quersumme** ihrer Ziffern durch 11 teilbar ist.",
+            },
+        };
+
+        // --- Game Logic ---
+        const startBtn = document.getElementById('start-btn');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverTextEl = document.getElementById('game-over-text');
+        const questionScreen = document.getElementById('question-screen');
+        const questionEl = document.getElementById('question');
+        const numberDisplayEl = document.getElementById('number-display');
+        const levelEl = document.getElementById('level');
+        const highScoreEl = document.getElementById('high-score');
+        const divisorButtonsContainer = document.getElementById('divisor-buttons');
+        const timerBar = document.getElementById('timer-bar');
+        const feedbackEl = document.getElementById('feedback');
+        const shareSection = document.getElementById('share-section');
+        const shareInputSection = document.getElementById('share-input-section');
+        const shareOutputSection = document.getElementById('share-output-section');
+        const nicknameInput = document.getElementById('nickname-input');
+        const generateShareBtn = document.getElementById('generate-share-btn');
+        const shareFeedbackEl = document.getElementById('share-feedback');
+        const langSwitcherContainer = document.getElementById('lang-switcher-container');
+
+        let level = 0;
+        let highScore = 0;
+        let currentNumber;
+        let correctDivisorsForNumber = [];
+        let selectedCorrectAnswers = new Set();
+        let timerId;
+        let timerStartTime;
+        let remainingTimeOnPause;
+        const TIME_LIMIT = 10;
+        const divisors = [2, 3, 4, 5, 6, 8, 9, 10, 11, 25];
+
+        const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23];
+        const evens = [4, 6, 8, 10, 12, 14, 16, 18, 20];
+        const odds = [9, 15, 21, 25, 27, 33, 35, 39, 45];
+        const allNumberLists = [primes, evens, odds];
+        let currentLang = 'ru';
+
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
+        function fallbackCopyTextToClipboard(text, feedbackCallback) {
+          const textArea = document.createElement("textarea");
+          textArea.value = text;
+          
+          // Avoid scrolling to bottom
+          textArea.style.top = "0";
+          textArea.style.left = "0";
+          textArea.style.position = "fixed";
+
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+
+          try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                feedbackCallback();
+            }
+          } catch (err) {
+            console.error('Fallback copy failed', err);
+          }
+
+          document.body.removeChild(textArea);
+        }
+
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Lax";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i=0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+            }
+            return null;
+        }
+
+        function loadHighScore() {
+            const savedScore = getCookie('divisibilityHighScore');
+            if (savedScore) {
+                highScore = parseInt(savedScore, 10);
+                highScoreEl.textContent = highScore;
+            }
+        }
+        
+        function getRandomElement(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        function generateComplexNumber() {
+            let number = 1;
+            let potentialDivisors;
+
+            if (level <= 7) {
+                // For the first 7 levels, generate a two-digit number
+                do {
+                    number = Math.floor(Math.random() * 90) + 10; // Random number from 10 to 99
+                    potentialDivisors = divisors.filter(d => number % d === 0);
+                } while (potentialDivisors.length > 4 || potentialDivisors.length < 1);
+            } else {
+                // Use the existing logic for levels > 7
+                 do {
+                    if (level < 15) {
+                        const shuffledLists = shuffleArray([...allNumberLists]);
+                        const selectedLists = shuffledLists.slice(0, 2);
+                        const num1 = getRandomElement(selectedLists[0]);
+                        const num2 = getRandomElement(selectedLists[1]);
+                        number = num1 * num2;
+                    } else {
+                        const num1 = getRandomElement(primes);
+                        const num2 = getRandomElement(evens);
+                        const num3 = getRandomElement(odds);
+                        number = num1 * num2 * num3;
+                    }
+                    potentialDivisors = divisors.filter(d => number % d === 0);
+                } while (potentialDivisors.length > 4 || potentialDivisors.length < 1); // Ensure 1 to 4 correct answers
+            }
+            return number;
+        }
+
+        function pauseTimer() {
+            clearTimeout(timerId);
+            const elapsedTime = Date.now() - timerStartTime;
+            remainingTimeOnPause -= elapsedTime;
+            if (remainingTimeOnPause < 0) remainingTimeOnPause = 0;
+        }
+
+        function resumeTimer() {
+            timerStartTime = Date.now();
+            const remainingPercentage = (remainingTimeOnPause / (TIME_LIMIT * 1000)) * 100;
+
+            // Set the bar to the current remaining time percentage without animation
+            timerBar.style.transition = 'none';
+            timerBar.style.width = `${remainingPercentage}%`;
+            
+            // Force a reflow to apply the change immediately
+            timerBar.offsetHeight; 
+            
+            // Re-enable the animation and set the target to 0%
+            timerBar.style.transition = `width ${remainingTimeOnPause / 1000}s linear`;
+            timerBar.style.width = '0%';
+            
+            timerId = setTimeout(endGame, remainingTimeOnPause);
+        }
+
+        async function generateShareImage(nickname, level, highscore, hash) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = 800;
+            canvas.height = 400;
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#4f46e5');
+            gradient.addColorStop(1, '#3b82f6');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Title
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 48px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(translations[currentLang].game_title, canvas.width / 2, 80);
+
+            // Stats
+            ctx.font = '36px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${translations[currentLang].level} ${level}`, 100, 180);
+            ctx.fillText(`${translations[currentLang].high_score} ${highscore}`, 100, 240);
+            
+            // Nickname
+            ctx.font = 'bold 40px Inter, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(nickname, canvas.width - 100, 180);
+
+            // Hash
+            ctx.font = '18px monospace';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fillText(`Proof: ${hash}`, canvas.width - 100, 230);
+            
+            return new Promise(resolve => {
+                canvas.toBlob(blob => {
+                    resolve(new File([blob], 'math-sprint-score.png', { type: 'image/png' }));
+                }, 'image/png');
+            });
+        }
+
+        function handleDivisorClick(event) {
+            const btn = event.target.closest('.divisor-btn');
+            if (!btn || btn.disabled) return;
+            const value = parseInt(btn.dataset.value, 10);
+
+            const isCorrect = correctDivisorsForNumber.includes(value);
+
+            if (isCorrect) {
+                pauseTimer();
+                const bonus = level > 10 ? 3000 : 2000;
+                remainingTimeOnPause += bonus;
+                if (remainingTimeOnPause > TIME_LIMIT * 1000) remainingTimeOnPause = TIME_LIMIT * 1000;
+
+                btn.classList.add('selected');
+                btn.disabled = true;
+                selectedCorrectAnswers.add(value);
+
+                if (selectedCorrectAnswers.size === correctDivisorsForNumber.length) {
+                    clearTimeout(timerId); // Level complete, stop timer for good.
+                    feedbackEl.textContent = '✅';
+                    feedbackEl.classList.add('text-green-500');
+                    feedbackEl.classList.remove('text-red-500');
+                    setTimeout(nextQuestion, 500);
+                } else {
+                    resumeTimer(); // If not the last correct answer, resume timer with bonus
+                }
+            } else {
+                feedbackEl.textContent = '❌';
+                feedbackEl.classList.add('text-red-500');
+                feedbackEl.classList.remove('text-green-500');
+                endGame();
+            }
+        }
+
+        function nextQuestion() {
+            level++;
+            levelEl.textContent = level;
+            feedbackEl.textContent = '';
+            selectedCorrectAnswers.clear();
+            
+            currentNumber = generateComplexNumber();
+            correctDivisorsForNumber = divisors.filter(d => currentNumber % d === 0);
+            
+            const incorrectDivisors = shuffleArray(divisors.filter(d => currentNumber % d !== 0));
+            
+            let buttonOptions = [...correctDivisorsForNumber];
+            while (buttonOptions.length < 9 && incorrectDivisors.length > 0) {
+                buttonOptions.push(incorrectDivisors.pop());
+            }
+            
+            const fillerDivisors = [7, 13, 14, 17, 19];
+            while (buttonOptions.length < 9) {
+                 buttonOptions.push(getRandomElement(fillerDivisors));
+            }
+
+            buttonOptions = shuffleArray(buttonOptions.slice(0, 9));
+            
+            divisorButtonsContainer.innerHTML = '';
+            buttonOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.textContent = opt;
+                btn.dataset.value = opt;
+                btn.className = 'divisor-btn p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg font-bold text-xl transition duration-200 ease-in-out';
+                divisorButtonsContainer.appendChild(btn);
+            });
+            
+            numberDisplayEl.textContent = currentNumber;
+            
+            startTimer();
+        }
+
+        function startTimer() {
+            clearTimeout(timerId);
+            remainingTimeOnPause = TIME_LIMIT * 1000; // Start with full time
+            resumeTimer();
+        }
+
+        function endGame() {
+            clearTimeout(timerId);
+            const finalLevel = level > 0 ? level - 1 : 0;
+            if (finalLevel > highScore) {
+                highScore = finalLevel;
+                highScoreEl.textContent = highScore;
+                setCookie('divisibilityHighScore', highScore, 365);
+            }
+            
+            questionScreen.style.display = 'none';
+            startScreen.style.display = 'block';
+
+            gameOverTextEl.textContent = translations[currentLang].game_over.replace('{score}', finalLevel);
+            document.querySelector('#start-btn').textContent = translations[currentLang].play_again;
+            
+            if (highScore >= 7) {
+                shareSection.style.display = 'block';
+                shareInputSection.style.display = 'flex';
+                shareOutputSection.innerHTML = '';
+                shareOutputSection.style.display = 'none';
+                nicknameInput.value = '';
+                shareFeedbackEl.textContent = '';
+                generateShareBtn.dataset.level = finalLevel;
+                generateShareBtn.dataset.highscore = highScore;
+            } else {
+                shareSection.style.display = 'none';
+            }
+            
+            level = 0;
+            levelEl.textContent = 0;
+        }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            questionScreen.style.display = 'block';
+            gameOverTextEl.innerHTML = '';
+            shareSection.style.display = 'none';
+            level = 0;
+            levelEl.textContent = '0';
+            nextQuestion();
+        }
+
+        function updateUI(lang) {
+             currentLang = lang;
+             document.documentElement.lang = lang;
+             document.body.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+             document.querySelectorAll('[data-key]').forEach(el => {
+                 const key = el.dataset.key;
+                 if (translations[lang][key]) {
+                     el.innerHTML = translations[lang][key];
+                 }
+             });
+             document.querySelectorAll('[data-key-placeholder]').forEach(el => {
+                const key = el.dataset.keyPlaceholder;
+                if(translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+             });
+
+             // Update active flag
+             document.querySelectorAll('.lang-btn').forEach(btn => {
+                 btn.classList.toggle('active', btn.dataset.lang === lang);
+             });
+        }
+        
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startGame);
+        divisorButtonsContainer.addEventListener('click', handleDivisorClick);
+        
+        generateShareBtn.addEventListener('click', async (event) => {
+            const btn = event.target.closest('button');
+            const level = btn.dataset.level;
+            const highscore = btn.dataset.highscore;
+            const nickname = nicknameInput.value.trim();
+            
+            if (!nickname) {
+                shareFeedbackEl.textContent = translations[currentLang].enter_name_feedback;
+                return;
+            }
+            shareFeedbackEl.textContent = '';
+
+            const dataToHash = `${nickname}${level}${highscore}`;
+            const proofHash = (await sha256(dataToHash)).substring(0, 12);
+            
+            const imageFile = await generateShareImage(nickname, level, highscore, proofHash);
+            
+            const shareTexts = {
+                ru: `Я достиг ${level} уровня в "Математическом спринте" (рекорд: ${highscore})! Сможешь лучше?`,
+                en: `I reached level ${level} in "Math Sprint" (high score: ${highscore})! Can you beat me?`,
+                es: `¡Alcancé el nivel ${level} en "Sprint Matemático" (récord: ${highscore})! ¿Puedes superarme?`,
+                fr: `J'ai atteint le niveau ${level} dans "Sprint Mathématique" (record : ${highscore}) ! Peux-tu me battre ?`,
+                it: `Ho raggiunto il livello ${level} in "Sprint Matematico" (record: ${highscore})! Riesci a battermi?`,
+                pt: `Atingi o nível ${level} no "Sprint de Matemática" (recorde: ${highscore})! Consegues vencer-me?`,
+                uk: `Я досяг ${level} рівня в "Математичному спринті" (рекорд: ${highscore})! Зможеш краще?`,
+                ar: `لقد وصلت إلى المستوى ${level} في "سباق الرياضيات" (أعلى نتيجة: ${highscore})! هل يمكنك التغلب علي؟`,
+                de: `Ich habe Level ${level} im "Mathe-Sprint" erreicht (Rekord: ${highscore})! Kannst du das überbieten?`
+            };
+            const shareText = `${shareTexts[currentLang]}\n\nProof: ${proofHash}`;
+            const shareTitle = translations[currentLang].game_title;
+
+            shareInputSection.style.display = 'none';
+            shareOutputSection.style.display = 'block';
+            shareOutputSection.innerHTML = ''; // Clear previous content
+            
+            // Create and append the image preview
+            const imgPreview = document.createElement('img');
+            imgPreview.src = URL.createObjectURL(imageFile);
+            imgPreview.className = 'max-w-full rounded-lg border-4 border-indigo-500 shadow-lg mx-auto';
+            imgPreview.alt = 'Shareable score card';
+            shareOutputSection.appendChild(imgPreview);
+
+            // Create and append the links container
+            const shareLinksContainer = document.createElement('div');
+            shareLinksContainer.className = 'flex items-center justify-center gap-6 mt-4';
+            shareOutputSection.appendChild(shareLinksContainer);
+            
+            const twitterIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>`;
+            const instagramIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>`;
+            const copyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+
+            const shareData = {
+                title: shareTitle,
+                text: shareText,
+                files: [imageFile]
+            };
+
+            shareLinksContainer.innerHTML = `
+                <button id="twitter-share" class="share-icon transition duration-200 text-gray-600 dark:text-gray-300 hover:text-blue-500" title="Share on Twitter">${twitterIcon}</button>
+                <button id="instagram-share" class="share-icon transition duration-200 text-gray-600 dark:text-gray-300 hover:text-pink-500" title="Share on Instagram">${instagramIcon}</button>
+                <button id="copy-share" class="share-icon transition duration-200 text-gray-600 dark:text-gray-300 hover:text-green-500" title="Copy image">${copyIcon}</button>
+            `;
+
+            const showFeedback = () => {
+                shareFeedbackEl.textContent = translations[currentLang].copied_feedback;
+                setTimeout(() => shareFeedbackEl.textContent = '', 2000);
+            };
+
+            // Universal Share for Twitter and Instagram
+            const universalShare = async () => {
+                if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        console.error("Share failed:", err.message);
+                    }
+                } else {
+                    // Fallback for desktop Twitter
+                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
+                }
+            };
+            
+            document.getElementById('twitter-share').addEventListener('click', universalShare);
+            document.getElementById('instagram-share').addEventListener('click', universalShare);
+            
+            // Copy Image functionality
+            document.getElementById('copy-share').addEventListener('click', async () => {
+                try {
+                    if (!navigator.clipboard.write) {
+                         throw new Error('Clipboard API not supported');
+                    }
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': imageFile })
+                    ]);
+                    showFeedback();
+                } catch (err) {
+                    console.error('Failed to copy image: ', err);
+                    // Fallback to copying text if image copy fails
+                    fallbackCopyTextToClipboard(shareText, showFeedback);
+                }
+            });
+        });
+        
+        // --- Initial Load ---
+        window.addEventListener('load', () => {
+            const languages = {
+                ru: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><rect width="900" height="400" y="200" fill="#d52b1e"/><rect width="900" height="200" y="200" fill="#0039a6"/></svg>',
+                en: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 60 30" ><clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath><clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><g clip-path="url(#s)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#t)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></g></svg>',
+                es: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 750 500"><rect width="750" height="500" fill="#c60b1e"/><rect width="750" height="250" y="125" fill="#ffc400"/></svg>',
+                fr: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><rect width="600" height="600" x="300" fill="#002654"/><rect width="300" height="600" x="600" fill="#ed2939"/></svg>',
+                it: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 900 600"><rect width="900" height="600" fill="#fff"/><rect width="600" height="600" x="300" fill="#009246"/><rect width="300" height="600" x="600" fill="#ce2b37"/></svg>',
+                pt: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#006233"/><rect width="480" height="800" fill="#f00"/></svg>',
+                uk: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 900 600"><rect width="900" height="600" fill="#0057b7"/><rect width="900" height="300" y="300" fill="#ffd700"/></svg>',
+                ar: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#c1272d"/><path fill="none" stroke="#006233" stroke-width="56" d="m600 259.5-122.4 380.4 320-235.1H402.4l320 235.1z"/></svg>',
+                de: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 5 3"><rect width="5" height="3" y="0" fill="#000"/><rect width="5" height="2" y="1" fill="#D00"/><rect width="5" height="1" y="2" fill="#FFCE00"/></svg>',
+            };
+
+            Object.entries(languages).forEach(([lang, svg]) => {
+                const btn = document.createElement('button');
+                btn.className = 'lang-btn';
+                btn.dataset.lang = lang;
+                btn.innerHTML = svg;
+                btn.addEventListener('click', () => updateUI(lang));
+                langSwitcherContainer.appendChild(btn);
+            });
+            
+            loadHighScore();
+            updateUI('ru'); // Set default language
+        });
+
+    </script>
+
+</body>
+</html>
+
